@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CivicQuest Demo</title>
+    <title>CivicQuest - Politik & News</title>
     <style>
         :root {
             --primary: #2563eb;
@@ -11,6 +11,7 @@
             --card: #ffffff;
             --text: #1e293b;
             --accent: #f59e0b;
+            --tagesschau: #00427e;
         }
 
         body {
@@ -57,65 +58,49 @@
             overflow-y: auto;
         }
 
-        /* Views */
         .view { display: none; }
         .view.active { display: block; }
 
-        /* Daily Pulse Card */
-        .pulse-card {
+        /* News Styles */
+        .news-item {
             background: var(--card);
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            text-align: center;
-            margin-top: 50px;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+            border: 1px solid #e2e8f0;
         }
 
-        .swipe-actions {
-            display: flex;
-            justify-content: space-around;
+        .news-item:active { transform: scale(0.98); }
+
+        .news-tag {
+            background: var(--tagesschau);
+            color: white;
+            font-size: 0.7rem;
+            padding: 4px 8px;
+            display: inline-block;
+        }
+
+        .news-content { padding: 12px; }
+        .news-title { font-weight: bold; font-size: 1rem; margin: 5px 0; }
+        .news-link { color: var(--primary); text-decoration: none; font-size: 0.85rem; font-weight: 500; }
+
+        /* Pulse Card */
+        .pulse-card {
+            background: var(--card);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            text-align: center;
             margin-top: 20px;
         }
 
-        .btn {
-            border: none;
-            padding: 12px 25px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
+        .btn { border: none; padding: 12px 20px; border-radius: 10px; cursor: pointer; font-weight: bold; }
         .btn-pro { background: #dcfce7; color: #166534; }
         .btn-contra { background: #fee2e2; color: #991b1b; }
 
-        /* Argument Battle */
-        .arg-item {
-            background: var(--card);
-            margin-bottom: 10px;
-            padding: 15px;
-            border-radius: 10px;
-            border-left: 5px solid var(--primary);
-        }
-
-        .upvote {
-            float: right;
-            color: var(--primary);
-            cursor: pointer;
-        }
-
-        /* Arena */
-        .live-badge {
-            background: #ef4444;
-            color: white;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 0.7rem;
-            animation: blink 1s infinite;
-        }
-
-        @keyframes blink { 50% { opacity: 0.5; } }
-
-        /* Bottom Nav */
+        /* Navigation */
         nav {
             background: var(--card);
             display: flex;
@@ -124,14 +109,7 @@
             border-top: 1px solid #e2e8f0;
         }
 
-        nav button {
-            background: none;
-            border: none;
-            color: #64748b;
-            cursor: pointer;
-            font-size: 0.8rem;
-        }
-
+        nav button { background: none; border: none; color: #64748b; cursor: pointer; font-size: 0.8rem; }
         nav button.active { color: var(--primary); font-weight: bold; }
     </style>
 </head>
@@ -146,76 +124,78 @@
     <div class="content">
         <div id="pulse" class="view active">
             <h3>Daily Pulse</h3>
-            <p>Soll die Innenstadt für Autos komplett gesperrt werden?</p>
-            <div class="pulse-card" id="card">
-                <p id="argument">"Weniger Lärm und bessere Luftqualität für Anwohner."</p>
-                <div class="swipe-actions">
+            <p>Soll das Wahlalter auf 16 Jahre gesenkt werden?</p>
+            <div class="pulse-card">
+                <p id="argument">"Jugendliche müssen über ihre eigene Zukunft mitentscheiden können."</p>
+                <div style="display: flex; justify-content: space-around; margin-top: 20px;">
                     <button class="btn btn-contra" onclick="nextArg()">Dagegen</button>
                     <button class="btn btn-pro" onclick="nextArg()">Dafür</button>
                 </div>
             </div>
         </div>
 
-        <div id="battle" class="view">
-            <h3>Argument Battle</h3>
-            <p>Thema: Neuer Radweg B-Strasse</p>
-            <div class="arg-item">
-                <span class="upvote">▲ 42</span>
-                <strong>Markus P.</strong>
-                <p>Der Radweg trennt den Verkehrsfluss sicherer als die aktuelle Markierung.</p>
+        <div id="news" class="view">
+            <h3>Politik News</h3>
+            
+            <div class="news-item">
+                <div class="news-tag">TAGESSCHAU</div>
+                <div class="news-content">
+                    <div class="news-title">Haushalt 2027: Neue Debatte um Schuldenbremse</div>
+                    <a href="https://www.tagesschau.de/inland/innenpolitik/" target="_blank" class="news-link">Jetzt lesen →</a>
+                </div>
             </div>
-            <div class="arg-item" style="border-left-color: #f59e0b;">
-                <span class="upvote">▲ 12</span>
-                <strong>Sarah L.</strong>
-                <p>Wo sollen die Lieferwagen für die Geschäfte dann halten?</p>
+
+            <div class="news-item">
+                <div class="news-tag">TAGESSCHAU</div>
+                <div class="news-content">
+                    <div class="news-title">US-Wahlen: Auswirkungen auf die deutsche Wirtschaft</div>
+                    <a href="https://www.tagesschau.de/ausland/" target="_blank" class="news-link">Mehr erfahren →</a>
+                </div>
+            </div>
+
+            <div class="news-item">
+                <div class="news-tag">LOKAL-NEWS</div>
+                <div class="news-content">
+                    <div class="news-title">Stadtrat plant neues Klimaschutzpaket</div>
+                    <a href="#" class="news-link">Details anzeigen →</a>
+                </div>
             </div>
         </div>
 
         <div id="arena" class="view">
-            <h3>Arena <span class="live-badge">LIVE</span></h3>
+            <h3>Live Arena</h3>
             <div style="background: #000; height: 180px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; margin-bottom: 15px;">
-                [ Video-Stream: Bürgermeisterin ]
+                [ Live-Stream der Debatte ]
             </div>
-            <h4>Top Frage (voted by App):</h4>
-            <div class="arg-item">
-                "Wie wird der Denkmalschutz beim Neubau der Brücke berücksichtigt?"
-            </div>
+            <p>Stelle eine Frage, die im Stream beantwortet werden soll!</p>
+            <button class="btn btn-pro" style="width: 100%;">Frage einreichen (+10 XP)</button>
         </div>
     </div>
 
     <nav>
         <button onclick="showView('pulse')" id="nav-pulse" class="active">Pulse</button>
-        <button onclick="showView('battle')" id="nav-battle">Battle</button>
+        <button onclick="showView('news')" id="nav-news">News</button>
         <button onclick="showView('arena')" id="nav-arena">Arena</button>
     </nav>
 </div>
 
 <script>
     function showView(viewId) {
-        // Alle Views verstecken
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-        // Gewählte View zeigen
         document.getElementById(viewId).classList.add('active');
-        
-        // Nav-Buttons stylen
         document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
         document.getElementById('nav-' + viewId).classList.add('active');
     }
 
     const args = [
-        "Einzelhandel befürchtet Umsatzeinbußen durch fehlende Parkplätze.",
-        "Rettungskräfte könnten bei Staus schneller durchkommen.",
-        "Die Lieferlogistik müsste komplett auf Lastenräder umgestellt werden."
+        "Jüngere Wähler könnten politisch noch zu leicht beeinflussbar sein.",
+        "Frühe Teilhabe stärkt das langfristige Interesse an der Demokratie.",
+        "Es gibt eine Diskrepanz zwischen Volljährigkeit und Wahlrecht."
     ];
     let currentArg = 0;
-
     function nextArg() {
         currentArg = (currentArg + 1) % args.length;
         document.getElementById('argument').innerText = args[currentArg];
-        // Kleiner Animationseffekt
-        const card = document.getElementById('card');
-        card.style.transform = "scale(0.95)";
-        setTimeout(() => card.style.transform = "scale(1)", 100);
     }
 </script>
 
