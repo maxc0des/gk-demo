@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CivicQuest - Politik & News</title>
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         :root {
             --primary: #2563eb;
             --bg: #f8fafc;
@@ -21,41 +25,50 @@
             margin: 0;
             display: flex;
             justify-content: center;
+            padding: 0;
         }
 
         .app-container {
             width: 100%;
-            max-width: 400px;
+            max-width: 100%;
             height: 100vh;
             background: var(--bg);
             display: flex;
             flex-direction: column;
             position: relative;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
         }
 
         header {
-            padding: 20px;
+            padding: 16px;
             background: var(--card);
             border-bottom: 1px solid #e2e8f0;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-shrink: 0;
+            gap: 12px;
         }
 
-        .streak-badge {
-            background: var(--accent);
+        header h1 {
+            margin: 0;
+            font-size: 1.3rem;
+        }
+
+        .xp-display {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
             color: white;
-            padding: 4px 12px;
+            padding: 8px 16px;
             border-radius: 20px;
-            font-size: 0.8rem;
+            font-size: 0.9rem;
             font-weight: bold;
+            white-space: nowrap;
         }
 
         .content {
             flex: 1;
-            padding: 20px;
+            padding: 16px;
             overflow-y: auto;
+            overflow-x: hidden;
         }
 
         .view { display: none; }
@@ -66,10 +79,11 @@
             background: var(--card);
             border-radius: 12px;
             overflow: hidden;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             transition: transform 0.2s;
             border: 1px solid #e2e8f0;
+            cursor: pointer;
         }
 
         .news-item:active { transform: scale(0.98); }
@@ -83,53 +97,252 @@
         }
 
         .news-content { padding: 12px; }
-        .news-title { font-weight: bold; font-size: 1rem; margin: 5px 0; }
+        .news-title { font-weight: bold; font-size: 0.95rem; margin: 5px 0; }
         .news-link { color: var(--primary); text-decoration: none; font-size: 0.85rem; font-weight: 500; }
 
         /* Pulse Card */
         .pulse-card {
             background: var(--card);
-            padding: 25px;
+            padding: 24px;
             border-radius: 15px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
             text-align: center;
-            margin-top: 20px;
+            margin-top: 16px;
+            border: 2px solid #e2e8f0;
+            touch-action: none;
+            cursor: grab;
+            transition: transform 0.1s;
         }
 
-        .btn { border: none; padding: 12px 20px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+        .pulse-card.dragging {
+            cursor: grabbing;
+        }
+
+        .pulse-card.swiped {
+            opacity: 0.5;
+        }
+
+        .btn { 
+            border: none; 
+            padding: 12px 20px; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            font-weight: bold;
+            font-size: 0.95rem;
+            transition: transform 0.2s;
+        }
+
+        .btn:active { transform: scale(0.95); }
+
         .btn-pro { background: #dcfce7; color: #166534; }
         .btn-contra { background: #fee2e2; color: #991b1b; }
+
+        .btn-primary { background: var(--primary); color: white; }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+
+        .button-group .btn {
+            flex: 1;
+        }
+
+        /* Stream Section */
+        .stream-container {
+            background: #000;
+            height: 200px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+        }
 
         /* Navigation */
         nav {
             background: var(--card);
             display: flex;
             justify-content: space-around;
-            padding: 15px;
+            padding: 12px;
             border-top: 1px solid #e2e8f0;
+            flex-shrink: 0;
+            gap: 8px;
         }
 
-        nav button { background: none; border: none; color: #64748b; cursor: pointer; font-size: 0.8rem; }
-        nav button.active { color: var(--primary); font-weight: bold; }
+        nav button { 
+            background: none; 
+            border: none; 
+            color: #64748b; 
+            cursor: pointer; 
+            font-size: 0.9rem;
+            padding: 8px 12px;
+            flex: 1;
+            text-align: center;
+        }
+
+        nav button.active { 
+            color: var(--primary); 
+            font-weight: bold;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        /* Responsive Design */
+        @media (min-width: 481px) {
+            .app-container {
+                max-width: 600px;
+                margin: 0 auto;
+                border-radius: 20px;
+                overflow: hidden;
+                box-shadow: 0 0 30px rgba(0,0,0,0.1);
+                height: calc(100vh - 40px);
+                margin-top: 20px;
+                margin-bottom: 20px;
+            }
+
+            header {
+                padding: 20px;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            nav {
+                padding: 15px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            header h1 {
+                font-size: 1.1rem;
+            }
+
+            .xp-display {
+                font-size: 0.85rem;
+                padding: 6px 12px;
+            }
+        }
+
+        .xp-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--card);
+            padding: 20px 30px;
+            border-radius: 15px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--accent);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            z-index: 100;
+            animation: popupFade 1s ease-out;
+            pointer-events: none;
+        }
+
+        @keyframes popupFade {
+            0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
+        }
+
+        .opinion-bar-container {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin: 24px 0 16px 0;
+        }
+
+        .opinion-bar {
+            flex: 1;
+            height: 32px;
+            background: #e2e8f0;
+            border-radius: 20px;
+            overflow: hidden;
+            display: flex;
+        }
+
+        .opinion-bar .pro {
+            background: linear-gradient(90deg, #dcfce7, #86efac);
+            color: #166534;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+            white-space: nowrap;
+            padding: 0 12px;
+            transition: width 0.3s ease;
+        }
+
+        .opinion-bar .contra {
+            background: linear-gradient(90deg, #fee2e2, #fca5a5);
+            color: #991b1b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+            white-space: nowrap;
+            padding: 0 12px;
+            transition: width 0.3s ease;
+        }
+
+        .opinion-stats {
+            display: flex;
+            gap: 12px;
+            font-size: 0.8rem;
+        }
+
+        .opinion-stat {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .opinion-stat.pro-stat {
+            color: #166534;
+            font-weight: bold;
+        }
+
+        .opinion-stat.contra-stat {
+            color: #991b1b;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
 
 <div class="app-container">
     <header>
-        <strong>CivicQuest</strong>
-        <div class="streak-badge">🔥 5 Tage Streak</div>
+        <h1>CivicQuest</h1>
+        <div class="xp-display">⭐ <span id="xp-count">0</span> XP</div>
     </header>
 
     <div class="content">
         <div id="pulse" class="view active">
             <h3>Daily Pulse</h3>
             <p>Soll das Wahlalter auf 16 Jahre gesenkt werden?</p>
-            <div class="pulse-card">
-                <p id="argument">"Jugendliche müssen über ihre eigene Zukunft mitentscheiden können."</p>
-                <div style="display: flex; justify-content: space-around; margin-top: 20px;">
-                    <button class="btn btn-contra" onclick="nextArg()">Dagegen</button>
-                    <button class="btn btn-pro" onclick="nextArg()">Dafür</button>
+            <div class="pulse-card" id="pulse-card">
+                <p id="argument" style="font-size: 1.1rem; margin: 0 0 20px 0; font-weight: 500;">"Jugendliche müssen über ihre eigene Zukunft mitentscheiden können."</p>
+                <div class="button-group">
+                    <button class="btn btn-contra" onclick="rateArgument('contra')">👎 Dagegen (+5 XP)</button>
+                    <button class="btn btn-pro" onclick="rateArgument('pro')">👍 Dafür (+5 XP)</button>
+                </div>
+                <p style="font-size: 0.85rem; color: #64748b; margin-top: 12px;">💡 Wische links/rechts zum nächsten Argument</p>
+            </div>
+            <div class="opinion-bar-container">
+                <div class="opinion-bar">
+                    <div class="pro" style="width: 50%; font-size: 0.75rem;">Pro <span id="pro-count">0</span></div>
+                    <div class="contra" style="width: 50%; font-size: 0.75rem;">Contra <span id="contra-count">0</span></div>
+                </div>
+                <div class="opinion-stats">
+                    <div class="opinion-stat pro-stat">👍 <span id="pro-total">0</span></div>
+                    <div class="opinion-stat contra-stat">👎 <span id="contra-total">0</span></div>
                 </div>
             </div>
         </div>
@@ -137,7 +350,7 @@
         <div id="news" class="view">
             <h3>Politik News</h3>
             
-            <div class="news-item">
+            <div class="news-item" onclick="readNews(this)">
                 <div class="news-tag">TAGESSCHAU</div>
                 <div class="news-content">
                     <div class="news-title">Haushalt 2027: Neue Debatte um Schuldenbremse</div>
@@ -145,7 +358,7 @@
                 </div>
             </div>
 
-            <div class="news-item">
+            <div class="news-item" onclick="readNews(this)">
                 <div class="news-tag">TAGESSCHAU</div>
                 <div class="news-content">
                     <div class="news-title">US-Wahlen: Auswirkungen auf die deutsche Wirtschaft</div>
@@ -153,7 +366,7 @@
                 </div>
             </div>
 
-            <div class="news-item">
+            <div class="news-item" onclick="readNews(this)">
                 <div class="news-tag">LOKAL-NEWS</div>
                 <div class="news-content">
                     <div class="news-title">Stadtrat plant neues Klimaschutzpaket</div>
@@ -164,39 +377,200 @@
 
         <div id="arena" class="view">
             <h3>Live Arena</h3>
-            <div style="background: #000; height: 180px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; margin-bottom: 15px;">
-                [ Live-Stream der Debatte ]
+            <div class="stream-container">
+                [ 🎥 Live-Stream der Debatte ]
             </div>
-            <p>Stelle eine Frage, die im Stream beantwortet werden soll!</p>
-            <button class="btn btn-pro" style="width: 100%;">Frage einreichen (+10 XP)</button>
+            <p>Schau den Stream an und verdiene XP!</p>
+            <button class="btn btn-primary" style="width: 100%;" onclick="watchStream()">▶ Stream anschauen (+15 XP)</button>
         </div>
     </div>
 
     <nav>
-        <button onclick="showView('pulse')" id="nav-pulse" class="active">Pulse</button>
-        <button onclick="showView('news')" id="nav-news">News</button>
-        <button onclick="showView('arena')" id="nav-arena">Arena</button>
+        <button onclick="showView('pulse')" id="nav-pulse" class="active">💭 Pulse</button>
+        <button onclick="showView('news')" id="nav-news">📰 News</button>
+        <button onclick="showView('arena')" id="nav-arena">🎥 Arena</button>
     </nav>
 </div>
 
 <script>
-    function showView(viewId) {
-        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-        document.getElementById(viewId).classList.add('active');
-        document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-        document.getElementById('nav-' + viewId).classList.add('active');
-    }
-
+    // Global State
+    let xp = localStorage.getItem('civicquest-xp') ? parseInt(localStorage.getItem('civicquest-xp')) : 0;
+    let currentArg = 0;
+    let touchStartX = 0;
+    let streamWatched = false;
+    let proVotes = localStorage.getItem('civicquest-pro-votes') ? parseInt(localStorage.getItem('civicquest-pro-votes')) : 0;
+    let contraVotes = localStorage.getItem('civicquest-contra-votes') ? parseInt(localStorage.getItem('civicquest-contra-votes')) : 0;
+    
     const args = [
         "Jüngere Wähler könnten politisch noch zu leicht beeinflussbar sein.",
         "Frühe Teilhabe stärkt das langfristige Interesse an der Demokratie.",
-        "Es gibt eine Diskrepanz zwischen Volljährigkeit und Wahlrecht."
+        "Es gibt eine Diskrepanz zwischen Volljährigkeit und Wahlrecht.",
+        "Mit 16 Jahren können Jugendliche bereits arbeiten und Steuern zahlen.",
+        "Das Gehirn entwickelt sich bis 25 - zu früh für solche Entscheidungen."
     ];
-    let currentArg = 0;
+
+    // XP System
+    function updateXPDisplay() {
+        const xpCount = document.getElementById('xp-count');
+        if (xpCount) {
+            xpCount.textContent = xp;
+            localStorage.setItem('civicquest-xp', xp);
+        }
+    }
+
+    function addXP(amount, label) {
+        xp += amount;
+        updateXPDisplay();
+        showXPPopup(label, amount);
+    }
+
+    function showXPPopup(label, xpAmount) {
+        const popup = document.createElement('div');
+        popup.className = 'xp-popup';
+        popup.textContent = `+${xpAmount} XP • ${label}`;
+        document.body.appendChild(popup);
+        setTimeout(() => popup.remove(), 1000);
+    }
+
+    // View Navigation
+    function showView(viewId) {
+        const views = document.querySelectorAll('.view');
+        views.forEach(v => v.classList.remove('active'));
+        const targetView = document.getElementById(viewId);
+        if (targetView) targetView.classList.add('active');
+        
+        const buttons = document.querySelectorAll('nav button');
+        buttons.forEach(b => b.classList.remove('active'));
+        const targetBtn = document.getElementById('nav-' + viewId);
+        if (targetBtn) targetBtn.classList.add('active');
+    }
+
+    // Arguments
     function nextArg() {
         currentArg = (currentArg + 1) % args.length;
-        document.getElementById('argument').innerText = args[currentArg];
+        const argElement = document.getElementById('argument');
+        if (argElement) {
+            argElement.textContent = `"${args[currentArg]}"`;
+        }
     }
+
+    function prevArg() {
+        currentArg = (currentArg - 1 + args.length) % args.length;
+        const argElement = document.getElementById('argument');
+        if (argElement) {
+            argElement.textContent = `"${args[currentArg]}"`;
+        }
+    }
+
+    // Swipe Handling
+    function handleSwipe(diff) {
+        if (Math.abs(diff) > 50) {
+            const pulseCard = document.getElementById('pulse-card');
+            if (pulseCard) {
+                pulseCard.classList.add('swiped');
+                setTimeout(() => {
+                    if (diff > 0) {
+                        nextArg();
+                    } else {
+                        prevArg();
+                    }
+                    pulseCard.classList.remove('swiped');
+                }, 300);
+            }
+        }
+    }
+
+    // News Reading
+    function readNews(element) {
+        if (!element.dataset.read) {
+            element.dataset.read = 'true';
+            element.style.opacity = '0.7';
+            const title = element.querySelector('.news-title');
+            if (title) {
+                const titleText = title.textContent.substring(0, 25);
+                addXP(10, `"${titleText}..." gelesen`);
+            }
+        }
+    }
+
+    // Stream Watching
+    function watchStream() {
+        if (!streamWatched) {
+            streamWatched = true;
+            addXP(15, 'Stream angeschaut');
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = '✅ Stream angeschaut!';
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.textContent = '▶ Stream anschauen (+15 XP)';
+                streamWatched = false;
+            }, 5000);
+        }
+    }
+
+    // Rating Arguments
+    function rateArgument(side) {
+        const label = side === 'pro' ? 'Argument bewertet (Pro)' : 'Argument bewertet (Contra)';
+        addXP(5, label);
+        
+        if (side === 'pro') {
+            proVotes++;
+            localStorage.setItem('civicquest-pro-votes', proVotes);
+        } else {
+            contraVotes++;
+            localStorage.setItem('civicquest-contra-votes', contraVotes);
+        }
+        
+        updateOpinionBar();
+        setTimeout(() => nextArg(), 300);
+    }
+
+    function updateOpinionBar() {
+        const total = proVotes + contraVotes;
+        const proWidth = total > 0 ? (proVotes / total) * 100 : 50;
+        const contraWidth = 100 - proWidth;
+        
+        const proBar = document.querySelector('.opinion-bar .pro');
+        const contraBar = document.querySelector('.opinion-bar .contra');
+        
+        if (proBar) {
+            proBar.style.width = `${proWidth}%`;
+            const proCount = document.getElementById('pro-count');
+            if (proCount) proCount.textContent = proVotes;
+        }
+        
+        if (contraBar) {
+            contraBar.style.width = `${contraWidth}%`;
+            const contraCount = document.getElementById('contra-count');
+            if (contraCount) contraCount.textContent = contraVotes;
+        }
+        
+        document.getElementById('pro-total').textContent = proVotes;
+        document.getElementById('contra-total').textContent = contraVotes;
+    }
+
+    // Initialize when DOM is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        updateXPDisplay();
+        updateOpinionBar();
+        
+        // Setup swipe detection
+        const pulseCard = document.getElementById('pulse-card');
+        if (pulseCard) {
+            pulseCard.addEventListener('touchstart', (e) => {
+                touchStartX = e.changedTouches[0].screenX;
+                pulseCard.classList.add('dragging');
+            });
+
+            pulseCard.addEventListener('touchend', (e) => {
+                const touchEndX = e.changedTouches[0].screenX;
+                pulseCard.classList.remove('dragging');
+                const diff = touchStartX - touchEndX;
+                handleSwipe(diff);
+            });
+        }
+    });
 </script>
 
 </body>
