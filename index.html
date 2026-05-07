@@ -179,6 +179,11 @@
         }
 
         .btn:active { transform: scale(0.95); }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
 
         .btn-pro { background: #dcfce7; color: #166534; }
         .btn-contra { background: #fee2e2; color: #991b1b; }
@@ -390,6 +395,13 @@
             font-weight: bold;
             text-align: center;
         }
+
+        .argument-rated-msg {
+            color: #64748b;
+            font-size: 0.85rem;
+            margin-top: 12px;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -415,10 +427,11 @@
 
             <div class="pulse-card" id="pulse-card">
                 <p id="argument" style="font-size: 1.1rem; margin: 0 0 20px 0; font-weight: 500;"></p>
-                <div class="button-group">
-                    <button class="btn btn-contra" onclick="rateArgument('contra')">👎 Dagegen (+5 XP)</button>
-                    <button class="btn btn-pro" onclick="rateArgument('pro')">👍 Dafür (+5 XP)</button>
+                <div class="button-group" id="button-group">
+                    <button class="btn btn-contra" id="btn-contra" onclick="rateArgument('contra')">👎 Dagegen (+5 XP)</button>
+                    <button class="btn btn-pro" id="btn-pro" onclick="rateArgument('pro')">👍 Dafür (+5 XP)</button>
                 </div>
+                <p id="argument-status" class="argument-rated-msg"></p>
                 <p style="font-size: 0.85rem; color: #64748b; margin-top: 12px;">💡 Wische links/rechts zum nächsten Argument</p>
             </div>
 
@@ -490,7 +503,7 @@
     let currentArg = 0;
     let touchStartX = 0;
     let streamWatched = false;
-    let hasRatedTodayForQuestion = {};
+    let ratedArguments = {};
     
     // Questions with their arguments
     const questions = [
@@ -563,7 +576,14 @@
             const savedContra = localStorage.getItem(`civicquest-q${idx}-contra`);
             if (savedPro) q.proVotes = parseInt(savedPro);
             if (savedContra) q.contraVotes = parseInt(savedContra);
-            hasRatedTodayForQuestion[idx] = localStorage.getItem(`civicquest-q${idx}-rated-today`) === 'true';
+            
+            // Load rated arguments for this question
+            const savedRated = localStorage.getItem(`civicquest-q${idx}-rated-args`);
+            if (savedRated) {
+                ratedArguments[idx] = JSON.parse(savedRated);
+            } else {
+                ratedArguments[idx] = {};
+            }
         });
     }
 
@@ -573,8 +593,6 @@
         if (lastActiveDay !== today) {
             lastActiveDay = today;
             localStorage.setItem('civicquest-last-day', today);
-            // Only increase streak if this is the first activity of the day
-            // If they were active yesterday, streak continues; otherwise it resets
             const yesterday = new Date();
             yesterday.setDate(yesterday.getDate() - 1);
             const yesterdayStr = yesterday.toISOString().split('T')[0];
@@ -582,7 +600,7 @@
             if (localStorage.getItem('civicquest-last-day-recorded') === yesterdayStr) {
                 streak++;
             } else {
-                streak = 1; // Reset to 1 if not consecutive
+                streak = 1;
             }
             localStorage.setItem('civicquest-streak', streak);
             localStorage.setItem('civicquest-last-day-recorded', today);
@@ -638,7 +656,6 @@
         currentArg = 0;
         updateQuestionUI();
         
-        // Update selector buttons
         const buttons = document.querySelectorAll('.question-btn');
         buttons.forEach((btn, i) => {
             btn.classList.toggle('active', i === idx);
@@ -649,7 +666,23 @@
         const q = questions[currentQuestion];
         document.getElementById('question-title').textContent = q.title;
         document.getElementById('argument').textContent = `"${q.args[currentArg]}"`;
+        updateArgumentStatus();
         updateOpinionBar();
+    }
+
+    function updateArgumentStatus() {
+        const statusEl = document.getElementById('argument-status');
+        const isRated = ratedArguments[currentQuestion][currentArg];
+        
+        if (isRated) {
+            statusEl.textContent = '✅ Du hast dieses Argument bereits bewertet';
+            document.getElementById('btn-pro').disabled = true;
+            document.getElementById('btn-contra').disabled = true;
+        } else {
+            statusEl.textContent = '';
+            document.getElementById('btn-pro').disabled = false;
+            document.getElementById('btn-contra').disabled = false;
+        }
     }
 
     // Arguments
@@ -657,12 +690,14 @@
         const q = questions[currentQuestion];
         currentArg = (currentArg + 1) % q.args.length;
         document.getElementById('argument').textContent = `"${q.args[currentArg]}"`;
+        updateArgumentStatus();
     }
 
     function prevArg() {
         const q = questions[currentQuestion];
         currentArg = (currentArg - 1 + q.args.length) % q.args.length;
         document.getElementById('argument').textContent = `"${q.args[currentArg]}"`;
+        updateArgumentStatus();
     }
 
     // Swipe Handling
@@ -714,12 +749,16 @@
 
     // Rating Arguments
     function rateArgument(side) {
+        // Check if already rated
+        if (ratedArguments[currentQuestion][currentArg]) {
+            return;
+        }
+
         checkAndUpdateStreak();
         
         const q = questions[currentQuestion];
         let bonusXP = 5;
         
-        // Streak bonus: +1 XP pro Streak (max +10)
         if (streak > 0) {
             bonusXP += Math.min(streak, 10);
             showStreakBonus();
@@ -736,10 +775,12 @@
             localStorage.setItem(`civicquest-q${currentQuestion}-contra`, q.contraVotes);
         }
         
-        hasRatedTodayForQuestion[currentQuestion] = true;
-        localStorage.setItem(`civicquest-q${currentQuestion}-rated-today`, 'true');
+        // Mark this specific argument as rated
+        ratedArguments[currentQuestion][currentArg] = true;
+        localStorage.setItem(`civicquest-q${currentQuestion}-rated-args`, JSON.stringify(ratedArguments[currentQuestion]));
         
         updateStreakDisplay();
+        updateArgumentStatus();
         updateOpinionBar();
         setTimeout(() => nextArg(), 300);
     }
@@ -800,7 +841,6 @@
         initQuestionSelector();
         updateQuestionUI();
         
-        // Setup swipe detection
         const pulseCard = document.getElementById('pulse-card');
         if (pulseCard) {
             pulseCard.addEventListener('touchstart', (e) => {
