@@ -54,6 +54,12 @@
             font-size: 1.3rem;
         }
 
+        .header-stats {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
         .xp-display {
             background: linear-gradient(135deg, #fbbf24, #f59e0b);
             color: white;
@@ -62,6 +68,19 @@
             font-size: 0.9rem;
             font-weight: bold;
             white-space: nowrap;
+        }
+
+        .streak-display {
+            background: linear-gradient(135deg, #ec4899, #f43f5e);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .content {
@@ -73,6 +92,33 @@
 
         .view { display: none; }
         .view.active { display: block; }
+
+        /* Question Selector */
+        .question-selector {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+        }
+
+        .question-btn {
+            background: #e2e8f0;
+            border: 2px solid transparent;
+            padding: 8px 14px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            white-space: nowrap;
+            transition: all 0.3s;
+            flex-shrink: 0;
+        }
+
+        .question-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
 
         /* News Styles */
         .news-item {
@@ -222,9 +268,13 @@
                 font-size: 1.1rem;
             }
 
-            .xp-display {
+            .xp-display, .streak-display {
                 font-size: 0.85rem;
                 padding: 6px 12px;
+            }
+
+            .header-stats {
+                gap: 8px;
             }
         }
 
@@ -313,6 +363,24 @@
             color: #991b1b;
             font-weight: bold;
         }
+
+        .question-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 16px 0 12px 0;
+            color: var(--text);
+        }
+
+        .streak-bonus {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            padding: 12px;
+            border-radius: 10px;
+            margin-top: 12px;
+            color: white;
+            font-size: 0.85rem;
+            font-weight: bold;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -320,21 +388,33 @@
 <div class="app-container">
     <header>
         <h1>CivicQuest</h1>
-        <div class="xp-display">⭐ <span id="xp-count">0</span> XP</div>
+        <div class="header-stats">
+            <div class="streak-display">🔥 <span id="streak-count">0</span></div>
+            <div class="xp-display">⭐ <span id="xp-count">0</span> XP</div>
+        </div>
     </header>
 
     <div class="content">
         <div id="pulse" class="view active">
             <h3>Daily Pulse</h3>
-            <p>Soll das Wahlalter auf 16 Jahre gesenkt werden?</p>
+            
+            <div class="question-selector" id="question-selector">
+                <!-- Filled by JavaScript -->
+            </div>
+
+            <div id="question-title" class="question-title"></div>
+
             <div class="pulse-card" id="pulse-card">
-                <p id="argument" style="font-size: 1.1rem; margin: 0 0 20px 0; font-weight: 500;">"Jugendliche müssen über ihre eigene Zukunft mitentscheiden können."</p>
+                <p id="argument" style="font-size: 1.1rem; margin: 0 0 20px 0; font-weight: 500;"></p>
                 <div class="button-group">
                     <button class="btn btn-contra" onclick="rateArgument('contra')">👎 Dagegen (+5 XP)</button>
                     <button class="btn btn-pro" onclick="rateArgument('pro')">👍 Dafür (+5 XP)</button>
                 </div>
                 <p style="font-size: 0.85rem; color: #64748b; margin-top: 12px;">💡 Wische links/rechts zum nächsten Argument</p>
             </div>
+
+            <div id="streak-bonus" class="streak-bonus" style="display: none;"></div>
+
             <div class="opinion-bar-container">
                 <div class="opinion-bar">
                     <div class="pro" style="width: 50%; font-size: 0.75rem;">Pro <span id="pro-count">0</span></div>
@@ -395,19 +475,117 @@
 <script>
     // Global State
     let xp = localStorage.getItem('civicquest-xp') ? parseInt(localStorage.getItem('civicquest-xp')) : 0;
+    let streak = localStorage.getItem('civicquest-streak') ? parseInt(localStorage.getItem('civicquest-streak')) : 0;
+    let lastActiveDay = localStorage.getItem('civicquest-last-day') ? localStorage.getItem('civicquest-last-day') : null;
+    let currentQuestion = 0;
     let currentArg = 0;
     let touchStartX = 0;
     let streamWatched = false;
-    let proVotes = localStorage.getItem('civicquest-pro-votes') ? parseInt(localStorage.getItem('civicquest-pro-votes')) : 0;
-    let contraVotes = localStorage.getItem('civicquest-contra-votes') ? parseInt(localStorage.getItem('civicquest-contra-votes')) : 0;
+    let hasRatedTodayForQuestion = {};
     
-    const args = [
-        "Jüngere Wähler könnten politisch noch zu leicht beeinflussbar sein.",
-        "Frühe Teilhabe stärkt das langfristige Interesse an der Demokratie.",
-        "Es gibt eine Diskrepanz zwischen Volljährigkeit und Wahlrecht.",
-        "Mit 16 Jahren können Jugendliche bereits arbeiten und Steuern zahlen.",
-        "Das Gehirn entwickelt sich bis 25 - zu früh für solche Entscheidungen."
+    // Questions with their arguments
+    const questions = [
+        {
+            title: "Soll das Wahlalter auf 16 Jahre gesenkt werden?",
+            args: [
+                "Jüngere Wähler könnten politisch noch zu leicht beeinflussbar sein.",
+                "Frühe Teilhabe stärkt das langfristige Interesse an der Demokratie.",
+                "Es gibt eine Diskrepanz zwischen Volljährigkeit und Wahlrecht.",
+                "Mit 16 Jahren können Jugendliche bereits arbeiten und Steuern zahlen.",
+                "Das Gehirn entwickelt sich bis 25 - zu früh für solche Entscheidungen."
+            ],
+            proVotes: 0,
+            contraVotes: 0
+        },
+        {
+            title: "Sollte Deutschland schneller aus der Kohleenergie aussteigen?",
+            args: [
+                "Schnellere Abkehr gefährdet Arbeitsplätze in Kohleregionen massiv.",
+                "Erneuerbare Energien sind bereits wirtschaftlicher als Kohle.",
+                "Andere Länder sind bereits schneller ausgestiegen - wir hinken hinterher.",
+                "Der Übergang braucht Zeit für stabile Energieversorgung.",
+                "Klimakrise wartet nicht - wir brauchen schnellere Maßnahmen jetzt."
+            ],
+            proVotes: 0,
+            contraVotes: 0
+        },
+        {
+            title: "Soll es ein bedingungsloses Grundeinkommen geben?",
+            args: [
+                "Grundeinkommen könnte Menschen von unnötiger Arbeit abhalten.",
+                "Es könnte Armut effektiver bekämpfen als aktuelle Sozialsysteme.",
+                "Die Finanzierung durch höhere Steuern schadet der Wirtschaft.",
+                "Menschen hätten mehr Freiheit für Umschulung und Neustart.",
+                "Inflation würde die Kaufkraft des Grundeinkommens aufzehren."
+            ],
+            proVotes: 0,
+            contraVotes: 0
+        },
+        {
+            title: "Sollten Mieten durch Gesetze gedeckelt werden?",
+            args: [
+                "Mietpreisbremse reduziert Investitionen in neue Wohnungen.",
+                "Wohnraum ist ein Menschenrecht und sollte bezahlbar sein.",
+                "Der Markt reguliert sich selbst bei ausreichendem Angebot.",
+                "Steigende Mieten treiben Menschen aus ihren Vierteln.",
+                "Preisdeckelung führt zu schlechterer Wartung von Gebäuden."
+            ],
+            proVotes: 0,
+            contraVotes: 0
+        },
+        {
+            title: "Sollte Migration stärker begrenzt werden?",
+            args: [
+                "Migration bringt kulturelle Vielfalt und wirtschaftliche Dynamik.",
+                "Zu viel Migration belastet Infrastruktur und Sozialausgaben.",
+                "Fachkräftemangel wird durch Zuwanderung teilweise gelöst.",
+                "Integration braucht Zeit und Ressourcen - Überkapazität vermeiden.",
+                "Migration ist ein Menschenrecht in einer globalisierten Welt."
+            ],
+            proVotes: 0,
+            contraVotes: 0
+        }
     ];
+
+    // Load persistent data for questions
+    function loadQuestionData() {
+        questions.forEach((q, idx) => {
+            const savedPro = localStorage.getItem(`civicquest-q${idx}-pro`);
+            const savedContra = localStorage.getItem(`civicquest-q${idx}-contra`);
+            if (savedPro) q.proVotes = parseInt(savedPro);
+            if (savedContra) q.contraVotes = parseInt(savedContra);
+            hasRatedTodayForQuestion[idx] = localStorage.getItem(`civicquest-q${idx}-rated-today`) === 'true';
+        });
+    }
+
+    // Streak System
+    function checkAndUpdateStreak() {
+        const today = new Date().toISOString().split('T')[0];
+        if (lastActiveDay !== today) {
+            lastActiveDay = today;
+            localStorage.setItem('civicquest-last-day', today);
+            // Only increase streak if this is the first activity of the day
+            // If they were active yesterday, streak continues; otherwise it resets
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
+            
+            if (localStorage.getItem('civicquest-last-day-recorded') === yesterdayStr) {
+                streak++;
+            } else {
+                streak = 1; // Reset to 1 if not consecutive
+            }
+            localStorage.setItem('civicquest-streak', streak);
+            localStorage.setItem('civicquest-last-day-recorded', today);
+        }
+    }
+
+    function updateStreakDisplay() {
+        const streakCount = document.getElementById('streak-count');
+        if (streakCount) {
+            streakCount.textContent = streak;
+        }
+    }
 
     // XP System
     function updateXPDisplay() {
@@ -445,21 +623,37 @@
         if (targetBtn) targetBtn.classList.add('active');
     }
 
+    // Question Selection
+    function selectQuestion(idx) {
+        currentQuestion = idx;
+        currentArg = 0;
+        updateQuestionUI();
+        
+        // Update selector buttons
+        const buttons = document.querySelectorAll('.question-btn');
+        buttons.forEach((btn, i) => {
+            btn.classList.toggle('active', i === idx);
+        });
+    }
+
+    function updateQuestionUI() {
+        const q = questions[currentQuestion];
+        document.getElementById('question-title').textContent = q.title;
+        document.getElementById('argument').textContent = `"${q.args[currentArg]}"`;
+        updateOpinionBar();
+    }
+
     // Arguments
     function nextArg() {
-        currentArg = (currentArg + 1) % args.length;
-        const argElement = document.getElementById('argument');
-        if (argElement) {
-            argElement.textContent = `"${args[currentArg]}"`;
-        }
+        const q = questions[currentQuestion];
+        currentArg = (currentArg + 1) % q.args.length;
+        document.getElementById('argument').textContent = `"${q.args[currentArg]}"`;
     }
 
     function prevArg() {
-        currentArg = (currentArg - 1 + args.length) % args.length;
-        const argElement = document.getElementById('argument');
-        if (argElement) {
-            argElement.textContent = `"${args[currentArg]}"`;
-        }
+        const q = questions[currentQuestion];
+        currentArg = (currentArg - 1 + q.args.length) % q.args.length;
+        document.getElementById('argument').textContent = `"${q.args[currentArg]}"`;
     }
 
     // Swipe Handling
@@ -511,24 +705,50 @@
 
     // Rating Arguments
     function rateArgument(side) {
+        checkAndUpdateStreak();
+        
+        const q = questions[currentQuestion];
+        let bonusXP = 5;
+        
+        // Streak bonus: +1 XP pro Streak (max +10)
+        if (streak > 0) {
+            bonusXP += Math.min(streak, 10);
+            showStreakBonus();
+        }
+
         const label = side === 'pro' ? 'Argument bewertet (Pro)' : 'Argument bewertet (Contra)';
-        addXP(5, label);
+        addXP(bonusXP, label);
         
         if (side === 'pro') {
-            proVotes++;
-            localStorage.setItem('civicquest-pro-votes', proVotes);
+            q.proVotes++;
+            localStorage.setItem(`civicquest-q${currentQuestion}-pro`, q.proVotes);
         } else {
-            contraVotes++;
-            localStorage.setItem('civicquest-contra-votes', contraVotes);
+            q.contraVotes++;
+            localStorage.setItem(`civicquest-q${currentQuestion}-contra`, q.contraVotes);
         }
         
+        hasRatedTodayForQuestion[currentQuestion] = true;
+        localStorage.setItem(`civicquest-q${currentQuestion}-rated-today`, 'true');
+        
+        updateStreakDisplay();
         updateOpinionBar();
         setTimeout(() => nextArg(), 300);
     }
 
+    function showStreakBonus() {
+        const bonusEl = document.getElementById('streak-bonus');
+        const streakBonus = Math.min(streak, 10);
+        bonusEl.textContent = `🔥 Streak-Bonus: +${streakBonus} XP! (${streak} Tage ununterbrochen)`;
+        bonusEl.style.display = 'block';
+        setTimeout(() => {
+            bonusEl.style.display = 'none';
+        }, 2000);
+    }
+
     function updateOpinionBar() {
-        const total = proVotes + contraVotes;
-        const proWidth = total > 0 ? (proVotes / total) * 100 : 50;
+        const q = questions[currentQuestion];
+        const total = q.proVotes + q.contraVotes;
+        const proWidth = total > 0 ? (q.proVotes / total) * 100 : 50;
         const contraWidth = 100 - proWidth;
         
         const proBar = document.querySelector('.opinion-bar .pro');
@@ -537,23 +757,39 @@
         if (proBar) {
             proBar.style.width = `${proWidth}%`;
             const proCount = document.getElementById('pro-count');
-            if (proCount) proCount.textContent = proVotes;
+            if (proCount) proCount.textContent = q.proVotes;
         }
         
         if (contraBar) {
             contraBar.style.width = `${contraWidth}%`;
             const contraCount = document.getElementById('contra-count');
-            if (contraCount) contraCount.textContent = contraVotes;
+            if (contraCount) contraCount.textContent = q.contraVotes;
         }
         
-        document.getElementById('pro-total').textContent = proVotes;
-        document.getElementById('contra-total').textContent = contraVotes;
+        document.getElementById('pro-total').textContent = q.proVotes;
+        document.getElementById('contra-total').textContent = q.contraVotes;
+    }
+
+    function initQuestionSelector() {
+        const selector = document.getElementById('question-selector');
+        selector.innerHTML = '';
+        questions.forEach((q, idx) => {
+            const btn = document.createElement('button');
+            btn.className = `question-btn ${idx === 0 ? 'active' : ''}`;
+            btn.textContent = `Q${idx + 1}`;
+            btn.onclick = () => selectQuestion(idx);
+            selector.appendChild(btn);
+        });
     }
 
     // Initialize when DOM is ready
     document.addEventListener('DOMContentLoaded', function() {
+        loadQuestionData();
+        checkAndUpdateStreak();
         updateXPDisplay();
-        updateOpinionBar();
+        updateStreakDisplay();
+        initQuestionSelector();
+        updateQuestionUI();
         
         // Setup swipe detection
         const pulseCard = document.getElementById('pulse-card');
